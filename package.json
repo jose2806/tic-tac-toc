@@ -1,6 +1,7 @@
 {
   "name": "tic-tac-toe",
   "version": "0.1.0",
+  "homepage": "https://jose2806.github.io/App-tareas",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
