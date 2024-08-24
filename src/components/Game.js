@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Board from "./Board";
 
 const Game = () => {
@@ -6,6 +6,33 @@ const Game = () => {
   const [currentPlayer, setCurrentPlayer] = useState('X');
   const [winner, setWinner] = useState(null);
   const [isVsComputer, setIsVsComputer] = useState(true); // jugar contra la máquina
+  const [gameCode, setGameCode] = useState("");// Para compartir el código de acceso
+  const ws = useRef(null); // Usamos useRef para mantener la conexión WebSocket
+
+  useEffect(() =>{
+    ws.current= new WebSocket('ws://localhost:8080');// Conectar al servidor WebSocket
+    ws.current.onopen = () =>{
+      console.log('Connected to WebSocket server');  
+    }
+
+    ws.current.onmessage = (event) =>{
+      const message = JSON.parse(event.data);
+
+      if(message.type === "updateBoard"){
+        setBoard(message.board);
+        setCurrentPlayer(message.currentPlayer);
+      }
+
+      if(message.type === "winner"){
+        setWinner(message.winner);
+      }
+    }
+
+    return () => {
+      ws.current.close();// cerrar la conexión
+    }
+
+  }, []);
 
   const handleClick = (index) =>{
     if(board[index] || winner) return;
@@ -19,8 +46,19 @@ const Game = () => {
     const newWinnner = checkWinner(newBoard);
     if(newWinnner){
       setWinner(newWinnner)
+      ws.current.send(JSON.stringify({
+        type: "winner", 
+        winner: newWinnner
+      }));
     } else {
-      setCurrentPlayer(currentPlayer==='X' ? 'O' : 'X');
+      const nextPlayer =currentPlayer==='X' ? 'O' : 'X';
+      setCurrentPlayer(nextPlayer);
+
+      ws.current.send(JSON.stringify({
+        type: "updateBoard",
+        board: newBoard,
+        currentPlayer: nextPlayer
+      }))
     }   
   }
 
